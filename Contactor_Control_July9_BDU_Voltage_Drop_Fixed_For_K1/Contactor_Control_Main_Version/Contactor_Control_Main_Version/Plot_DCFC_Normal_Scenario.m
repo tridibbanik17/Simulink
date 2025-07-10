@@ -1,0 +1,267 @@
+% Added by Tridib (The rest of the script below strating from here are new)
+figure(6)
+clf;
+
+
+% Get Sail color palette
+tmpFig = figure('Visible','off');
+tmpAx = axes(tmpFig);
+colororder(tmpAx, 'sail');
+colors = colororder(tmpAx);
+close(tmpFig);
+
+% Precharge timing
+t0 = 0.1;
+t_end = 1.0;
+
+% Background limits
+ymin = -0.5;
+ymax = 1.5;
+
+% Refined background colors
+color_idle     = [0.95 0.95 0.96];  % light gray
+color_post     = [0.85 0.90 0.98];  % darker bluish-gray
+
+% Tiled layout
+t = tiledlayout(2,1);
+t.TileSpacing = 'compact';
+t.Padding = 'compact';
+
+% Shared axis labels
+ylabel(t, 'Contactors/Relays Signals', 'FontSize', 24);
+xlabel(t, 'Time (s)', 'FontSize', 24);
+
+% === Top Tile: K1 & K4 ===
+nexttile
+% Draw background
+h_idle   = fill([0 t0 t0 0],       [ymin ymin ymax ymax], color_idle,     'EdgeColor', 'none'); hold on;
+h_post   = fill([t0 t_end t_end t0],[ymin ymin ymax ymax], color_post,     'EdgeColor', 'none');
+
+% Plot signals
+h_K1 = plot(ans.Time, ans.K1, '-', 'Color', colors(1,:), 'LineWidth', 2);
+h_K4 = plot(ans.Time, ans.K4, '--','Color', colors(3,:), 'LineWidth', 2);
+
+% Axis settings
+xlim([0 1]); ylim([ymin ymax]);
+yticks([0 1]);
+ax = gca; 
+ax.FontSize = 24;
+ax.Layer = 'top';  % Make grid visible above fills
+grid on
+
+% Annotations
+xline(t0, '--', 'HandleVisibility', 'off');
+
+% Legend
+legend([h_K1, h_K4], ...
+    {'Main Contactor', 'DCFC Contactor'}, ...
+    'FontSize', 22, 'Location', 'northeast');
+
+
+% === Bottom Tile: K2 & K3 ===
+nexttile
+% Draw background
+h_idle   = fill([0 t0 t0 0],       [ymin ymin ymax ymax], color_idle,     'EdgeColor', 'none'); hold on;
+h_post   = fill([t0 t_end t_end t0],[ymin ymin ymax ymax], color_post,     'EdgeColor', 'none');
+
+% Plot signals
+h_K2 = plot(ans.Time, ans.K2, '-',  'Color', colors(2,:), 'LineWidth', 2);
+h_K3 = plot(ans.Time, ans.K3, '--', 'Color', colors(5,:), 'LineWidth', 2);
+
+% Axis settings
+xlim([0 1]); ylim([ymin ymax]);
+yticks([0 1]);
+ax = gca; 
+ax.FontSize = 24;
+ax.Layer = 'top';  % Make grid visible above fills
+grid on
+
+% Annotations
+xline(t0, '--', 'HandleVisibility', 'off');
+
+% Legend
+legend([h_K2, h_K3], ...
+    {'Precharge Relay (-)', 'Precharge Relay (+)'}, ...
+    'FontSize', 22, 'Location', 'best');
+
+% Export high-resolution figure
+exportgraphics(gcf, 'DCFC_Contactor_Normal_1.png', 'Resolution', 600);
+
+
+%% === FIGURE 7: Precharge Current with Background Legends ===
+
+colors = [
+    0.9290 0.6940 0.1250;  % Current - yellowish
+    0.8500 0.3250 0.0980;  % Pack voltage - reddish (not used here)
+    0.0000 0.4470 0.7410;  % Bus voltage - blue (not used here)
+];
+
+figure(7)
+clf;
+
+% === Precharge timing ===
+t0 = 0.1;
+t_end = 1.0;
+
+% === Background limits ===
+ymin = 0;
+ymax = 20;
+
+% === Refined background colors ===
+color_idle     = [0.95 0.95 0.96];  % light gray
+color_post     = [0.85 0.90 0.98];  % darker bluish-gray
+
+% === Draw background regions ===
+h_idle   = fill([0 t0 t0 0],       [ymin ymin ymax ymax], color_idle,     'EdgeColor', 'none');
+hold on
+h_post   = fill([t0 t_end t_end t0],[ymin ymin ymax ymax], color_post,     'EdgeColor', 'none');
+
+% === Plot current signal ===
+h_current = plot(ans.tout, ans.HVBatPack_Current_Prim, ...
+    'Color', colors(1,:), 'LineWidth', 2);
+
+% === Axes and grid ===
+xlim([0 1]);
+ylim([ymin ymax]);
+ax = gca;
+ax.FontSize = 24;
+ax.Layer = 'top';
+xlabel('Time (s)', 'FontSize', 24);
+ylabel('Measured Current (A)', 'FontSize', 24);
+grid on;
+
+% === Annotation lines and labels ===
+xline(t0, '--', 'HandleVisibility', 'off');
+
+% === Legend (backgrounds + current) ===
+legend([h_current], ...
+    {'Battery Pack Current'}, ...
+    'FontSize', 22, 'Location', 'southeast');
+
+% === Export high-resolution figure ===
+exportgraphics(gcf, 'DCFC_Contactor_Normal_2.png', 'Resolution', 600);
+
+
+%% === FIGURE 8: Precharge Voltages with Background Legends ===
+figure(8)
+clf;
+
+% === Precharge timing ===
+t0 = 0.1;                                  % Start of DCFC Charging
+t_end = 1.0;
+
+% === Background limits ===
+ymin = 0;
+ymax = 500;
+
+% === Refined background colors ===
+color_idle     = [0.95 0.95 0.96];  % light gray
+color_post     = [0.85 0.90 0.98];  % darker bluish-gray (closed)
+
+% === Draw background regions ===
+h_idle   = fill([0 t0 t0 0],       [ymin ymin ymax ymax], color_idle,     'EdgeColor', 'none');
+hold on
+h_post   = fill([t0 t_end t_end t0],[ymin ymin ymax ymax], color_post,     'EdgeColor', 'none');
+
+% === Plot voltage signals ===
+h_pack = plot(ans.tout, ans.BPCM_PreCharge_Pack_Voltage_Aux, 'Color', colors(2,:), 'LineWidth', 2);
+h_charging  = plot(ans.tout, ans.Charging_Station_Voltage, 'Color', colors(3,:), 'LineWidth', 2);
+
+% === Threshold line and label ===
+yline(ans.BPCM_PreCharge_Pack_Voltage_Aux, '--', 'HandleVisibility', 'off');
+text(t0 + 0.025, 450, ...
+    sprintf('Battery Pack Voltage = 450 V'), ...
+    'HorizontalAlignment', 'left', ...
+    'VerticalAlignment', 'top', ...
+    'FontSize', 22);
+
+% === Axis settings ===
+xlabel('Time (s)', 'FontSize', 24);
+ylabel('Voltage (V)', 'FontSize', 24);
+xlim([0 1]);
+ylim([ymin ymax]);
+ax = gca;
+ax.FontSize = 24;
+ax.Layer = 'top';  % Grid above background
+grid on;
+
+% === Annotation lines and labels ===
+xline(t0, '--', 'HandleVisibility', 'off');
+
+% === Legend (backgrounds + voltages) ===
+legend([h_pack, h_charging], ...
+    {'Battery Pack Voltage','DC Link Bus Voltage'}, ...
+    'FontSize', 22, 'Location', 'southeast');
+
+% === Export figure ===
+exportgraphics(gcf, 'DCFC_Contactor_Normal_3.png', 'Resolution', 600);
+
+
+%% === FIGURE 9: Plot Battery Contactor Control Status ===
+figure(9)
+clf;
+
+% === Background limits ===
+ymin = 0;
+ymax = 7;
+
+% === DCFC CHARGING timing ===
+t0 = 0.1;                                  % Start of DCFC Charging
+t_end = 1.0;
+
+% === Refined background colors ===
+color_idle     = [0.95 0.95 0.96];  % light gray
+color_post     = [0.85 0.90 0.98];  % slightly darker bluish-gray (closed)
+
+% === Draw background regions ===
+h_idle = fill([0 t0 t0 0],       [ymin ymin ymax ymax], color_idle,     'EdgeColor', 'none');
+hold on
+h_post = fill([t0 t_end t_end t0],[ymin ymin ymax ymax], color_post,     'EdgeColor', 'none');
+
+% === Plot signal ===
+h_signal = plot(ans.Time, ans.HVBatCntctrStat, 'k', 'LineWidth', 2);  % 'k' for black
+
+% === Axis settings ===
+ylabel('Battery Control Status');
+xlabel('Time (s)');
+xlim([0 1]);
+ylim([ymin ymax]);
+
+ax = gca;
+ax.FontSize = 24;
+ax.Layer = 'top';           % Grid above background
+grid on;
+
+% === Annotation lines and labels ===
+xline(t0, '--', 'HandleVisibility', 'off');
+text(t0 + 0.025, 1.5, sprintf('Start time of \n DCFC Charging: \n t_{s} = %.1f s ', t0), ...
+    'HorizontalAlignment', 'left', ...
+    'VerticalAlignment', 'middle', ...
+    'FontSize', 22);
+
+% === Add legend for background regions ===
+legend([h_signal], ...
+    {'Output Signal'}, ...
+    'Location', 'southeast', ...
+    'FontSize', 22);
+exportgraphics(gcf, 'DCFC_Contactor_Normal_4.png', 'Resolution', 600);
+
+%% === FIGURE 10: LEGEND ONLY FIGURE ===
+figure('Visible','on', 'Position', [100, 100, 600, 100]);
+
+% Define colors (same as your main figures)
+color_idle         = [0.95 0.95 0.96];  % light gray
+color_post         = [0.85 0.90 0.98];  % darker bluish-gray
+
+% Plot invisible dummy markers with larger size
+h_idle   = plot(nan, nan, 's', 'MarkerSize', 16, 'MarkerFaceColor', color_idle, 'MarkerEdgeColor', 'k');
+hold on
+h_post   = plot(nan, nan, 's', 'MarkerSize', 16, 'MarkerFaceColor', color_post, 'MarkerEdgeColor', 'k');
+
+% Create the legend with larger font
+legend([h_idle, h_post], ...
+    {'Open', 'DCFC Charging Closed'}, ...
+    'FontSize', 22, 'Location', 'northoutside', 'Orientation', 'horizontal');
+
+axis off; box off;
+exportgraphics(gcf, 'DCFC_Contactor_Normal_5.png', 'Resolution', 600);
