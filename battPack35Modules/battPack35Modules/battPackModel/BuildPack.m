@@ -1,0 +1,126 @@
+
+import simscape.battery.builder.*
+
+%This is a file that constructs the configuration for battery workforce
+%challenge, mcmaster&mohawk team. It creates the following configuration:
+%Cell: Samsung 50G - 5AH, 3.7V
+%module: 3s 34p, 35 modules in total
+%due to time consumption, we can not have 105 cells in series each with its
+%own module. Thus, we are having each module simulating with the same
+%battery module, which brings us to 105/3 = 35 different cell model.
+
+%module assembly
+module_count = 35;
+
+cellgeometry = CylindricalGeometry();
+cellgeometry.Radius = simscape.Value(0.0105,"m");
+cellgeometry.Height = simscape.Value(0.07,"m");
+
+uniqueCells =repmat(Cell.empty(), module_count, 1);
+uniqueParallelAssemblys =repmat(ParallelAssembly.empty(), module_count, 1);
+uniqueModules = repmat(Module.empty(), module_count, 1);
+
+for i=1:module_count
+    %parallel assembly
+    uniqueCells(i) = Cell(...
+        Geometry = cellgeometry, ...
+        Mass = simscape.Value(0.07,"kg"),...
+        Capacity = simscape.Value(5, "A*hr"),...
+        Energy = simscape.Value(50, "W*hr"));
+    uniqueCells(i).CellModelOptions.BlockParameters.thermal_port = "model";
+    uniqueCells(i).CellModelOptions.BlockParameters.T_dependence = "yes";
+    uniqueCells(i).CellModelOptions.BlockParameters.prm_dyn = "rc3";
+    uniqueParallelAssemblys(i) = ParallelAssembly(...
+        ModelResolution = "Lumped",...
+        NumParallelCells=34, ...
+        Cell=uniqueCells(i), ...
+        Topology="Hexagonal", ...
+        Rows=5, ...
+        InterCellGap=simscape.Value(0.002,"m"));
+
+    uniqueModules(i) = Module( ...
+        ParallelAssembly=uniqueParallelAssemblys(i), ...
+        ModelResolution="Lumped", ...
+        NumSeriesAssemblies=3, ...
+        StackingAxis="Y", ...
+        InterParallelAssemblyGap=simscape.Value(0.002, "m"));
+end
+
+%tray assembly
+moduleassembly_typ1_1 = ModuleAssembly( ...
+    Module = uniqueModules(1:9), ...
+    NumLevels = 9, ...
+    StackingAxis = "X", ...
+    InterModuleGap = simscape.Value(0.02064, "m"), ...
+    CircuitConnection = "Series");
+
+moduleassembly_typ1_2 = ModuleAssembly( ...
+    Module = uniqueModules(10:18), ...
+    NumLevels = 9, ...
+    StackingAxis = "X", ...
+    InterModuleGap = simscape.Value(0.02064, "m"), ...
+    CircuitConnection = "Series");
+
+moduleassembly_typ1_3 = ModuleAssembly( ...
+    Module = uniqueModules(19:27), ...
+    NumLevels = 9, ...
+    StackingAxis = "X", ...
+    InterModuleGap = simscape.Value(0.02064, "m"), ...
+    CircuitConnection = "Series");
+
+% Last 6 modules for 1 assembly
+moduleassembly_typ2 = ModuleAssembly( ...
+    Module = uniqueModules(28:35), ...
+    NumLevels = 8, ...
+    StackingAxis = "X", ...
+    InterModuleGap = simscape.Value(0.02064, "m"), ...
+    CircuitConnection = "Series");
+
+%pack assembly
+batterypack = Pack(...
+    ModuleAssembly=[moduleassembly_typ2, moduleassembly_typ1_1, moduleassembly_typ1_2, moduleassembly_typ1_3], ...
+    StackingAxis="Y",...
+    InterModuleAssemblyGap=simscape.Value(0.1, "m"));
+disp(uniqueCells(1).CellModelOptions.BlockParameters);
+buildBattery(batterypack,LibraryName="pack_105s34p");
+%{
+%visulazation
+disp(batterycell);
+%battery overview
+disp(batterycell.CellModelOptions.BlockParameters);
+f = uifigure("Color","white");
+cellchart = BatteryChart(Parent =f,Battery=batterycell);
+title(cellchart,"Cylindrical Cell");
+
+%display parallel assembly
+f = uifigure("Color","white");
+parallelassemblychart = BatteryChart(Parent=f,Battery=parallelassembly, SimulationStrategyVisible="on");
+title(parallelassemblychart,"Parallel Assembly Chart")
+
+%display module assembly
+f = uifigure("Color", "white");
+modulechart = BatteryChart(Parent = f, Battery = module, SimulationStrategyVisible="on");
+title(modulechart, "Module Chart")
+
+%display tray assembly
+f = uifigure("Color","white");
+moduleassemblychart = BatteryChart(Parent=f,Battery=moduleassembly_typ1_1, SimulationStrategyVisible="on");
+title(moduleassemblychart,"Module Assembly Chart")
+%display tray assembly
+f = uifigure("Color","white");
+moduleassemblychart = BatteryChart(Parent=f,Battery=moduleassembly_typ1_2, SimulationStrategyVisible="on");
+title(moduleassemblychart,"Module Assembly Chart")
+%display tray assembly
+f = uifigure("Color","white");
+moduleassemblychart = BatteryChart(Parent=f,Battery=moduleassembly_typ1_3, SimulationStrategyVisible="on");
+title(moduleassemblychart,"Module Assembly Chart")
+%display tray assembly
+f = uifigure("Color","white");
+moduleassemblychart = BatteryChart(Parent=f,Battery=moduleassembly_typ2, SimulationStrategyVisible="on");
+title(moduleassemblychart,"Module Assembly Chart")
+%}
+
+%display pack assembly
+f = uifigure("Color", "white");
+packchart = BatteryChart(Parent=f,Battery=batterypack, SimulationStrategyVisible="on");
+title(packchart,"Pack Chart")
