@@ -1,0 +1,105 @@
+component ParallelAssemblyType1
+    % ParallelAssemblyType1:2
+    % Parallel Assembly Block
+    %    Model resolution: Detailed
+    %    Number of cells: 34
+    %
+    %    MATLAB version: 23.2
+    %    Simscape Battery version: 23.2
+    %    Simscape code generated on: 21-Jul-2025 23:15:48
+
+    parameters
+        SOC_vecCell = {[0, .1, .25, .5, .75, .9, 1],'1'}; % Vector of state-of-charge values, SOC
+        T_vecCell = {[278, 293, 313],'K'}; % Vector of temperatures, T
+        V0_matCell = {[3.49, 3.5, 3.51; 3.55, 3.57, 3.56; 3.62, 3.63, 3.64; 3.71, 3.71, 3.72; 3.91, 3.93, 3.94; 4.07, 4.08, 4.08; 4.19, 4.19, 4.19],'V'}; % Open-circuit voltage, V0(SOC,T)
+        V_rangeCell = {[0, inf],'V'}; % Terminal voltage operating range [Min Max]
+        R0_matCell = {[.0117, .0085, .009; .011, .0085, .009; .0114, .0087, .0092; .0107, .0082, .0088; .0107, .0083, .0091; .0113, .0085, .0089; .0116, .0085, .0089],'Ohm'}; % Terminal resistance, R0(SOC,T)
+        AHCell = {27,'A*hr'}; % Cell capacity, AH
+        extrapolation_optionCell = {simscape.enum.extrapolation.nearest,'1'}; % Extrapolation method for all tables
+        R1_matCell = {[.0109, .0029, .0013; .0069, .0024, .0012; .0047, .0026, .0013; .0034, .0016, .001; .0033, .0023, .0014; .0033, .0018, .0011; .0028, .0017, .0011],'Ohm'}; % First polarization resistance, R1(SOC,T)
+        tau1_matCell = {[20, 36, 39; 31, 45, 39; 109, 105, 61; 36, 29, 26; 59, 77, 67; 40, 33, 29; 25, 39, 33],'s'}; % First time constant, tau1(SOC,T)
+        R2_matCell = {[.0109, .0029, .0013; .0069, .0024, .0012; .0047, .0026, .0013; .0034, .0016, .001; .0033, .0023, .0014; .0033, .0018, .0011; .0028, .0017, .0011],'Ohm'}; % Second polarization resistance, R2(SOC,T)
+        tau2_matCell = {[20, 36, 39; 31, 45, 39; 109, 105, 61; 36, 29, 26; 59, 77, 67; 40, 33, 29; 25, 39, 33],'s'}; % Second time constant, tau2(SOC,T)
+        R3_matCell = {[.0109, .0029, .0013; .0069, .0024, .0012; .0047, .0026, .0013; .0034, .0016, .001; .0033, .0023, .0014; .0033, .0018, .0011; .0028, .0017, .0011],'Ohm'}; % Third polarization resistance, R3(SOC,T)
+        tau3_matCell = {[20, 36, 39; 31, 45, 39; 109, 105, 61; 36, 29, 26; 59, 77, 67; 40, 33, 29; 25, 39, 33],'s'}; % Third time constant, tau3(SOC,T)
+        thermal_massCell = {100,'J/K'}; % Thermal mass
+    end
+
+    parameters(ExternalAccess=none)
+        P = 34; % Batteries in Parallel
+    end
+
+    nodes
+        p = foundation.electrical.electrical; % +
+        n = foundation.electrical.electrical; % -
+    end
+
+    variables
+        iCell = {repmat(0,34,1),'A'}; % Cell current (positive in)
+        vCell = {repmat(0,34,1),'V'}; % Cell terminal voltage
+        socCell = {value={repmat(1,34,1),'1'},priority=priority.high}; % Cell state of charge
+        numCyclesCell = {value={repmat(0,34,1),'1'},priority=priority.high}; % Cell discharge cycles
+        temperatureCell = {value={repmat(298.15,34,1),'K'},priority=priority.high}; % Cell temperature
+        vParallelAssembly = {value={0,'V'},priority=priority.none}; % Parallel Assembly Voltage
+        socParallelAssembly = {value={1,'1'},priority=priority.none}; % Parallel Assembly state of charge
+    end
+
+    equations
+        assert(length(iCell) == P);
+        assert(length(vCell) == P);
+        assert(length(socCell) == P);
+        assert(length(numCyclesCell) == P);
+        assert(length(temperatureCell) == P);
+        assert(length(vParallelAssembly) == 1);
+        assert(length(socParallelAssembly) == 1);
+        vParallelAssembly == Cell1(1).p.v - Cell1(1).n.v;
+        socParallelAssembly == sum([Cell1.stateOfCharge])/P;
+    end
+
+    annotations
+        [p] : Side=top;
+        [n] : Side=bottom;
+        UILayout = [UIGroup("Main",SOC_vecCell,T_vecCell,V0_matCell,V_rangeCell,R0_matCell,AHCell,extrapolation_optionCell),...
+            UIGroup("Dynamics",R1_matCell,tau1_matCell,R2_matCell,tau2_matCell,R3_matCell,tau3_matCell),...
+            UIGroup("Thermal",thermal_massCell)];
+        Icon = 'parallelAssembly.svg';
+    end
+
+    for Pidx = 1:P
+        components(ExternalAccess=observe,CompileReuse=true)
+            Cell1(Pidx) = batteryecm.table_battery(SOC_vec = SOC_vecCell,...
+                T_vec = T_vecCell,V0_mat = V0_matCell,V_range = V_rangeCell,R0_mat = R0_matCell,...
+                AH = AHCell,extrapolation_option = extrapolation_optionCell,...
+                R1_mat = R1_matCell,tau1_mat = tau1_matCell,R2_mat = R2_matCell,tau2_mat = tau2_matCell,...
+                R3_mat = R3_matCell,tau3_mat = tau3_matCell,...
+                thermal_mass = thermal_massCell,T_dependence = simscape.enum.tablebattery.temperature_dependence.yes,...
+                prm_age_OCV = simscape.enum.tablebattery.prm_age_OCV.OCV,...
+                prm_age_capacity = simscape.enum.tablebattery.prm_age.disabled,...
+                prm_age_modeling = simscape.enum.tablebattery.prm_age_modeling.equation,...
+                prm_age_resistance = simscape.enum.tablebattery.prm_age.disabled,...
+                prm_dir = simscape.enum.tablebattery.prm_dir.noCurrentDirectionality,...
+                prm_dyn = simscape.enum.tablebattery.prm_dyn.rc3,...
+                prm_fade = simscape.enum.tablebattery.prm_fade.disabled,prm_leak = simscape.enum.tablebattery.prm_leak.disabled,...
+                thermal_port = simscape.enum.thermaleffects.model,i.priority = priority.none,...
+                v.priority = priority.none,stateOfCharge.priority = priority.none,...
+                num_cycles.priority = priority.none,cell_temperature.priority = priority.none);
+        end
+    end
+
+    for Pidx = 1:P
+        connections
+            connect(p,Cell1(Pidx).p);
+            connect(Cell1(Pidx).n,n);
+        end
+    end
+
+    for Pidx = 1:P
+        equations
+            Cell1(Pidx).i == iCell(Pidx);
+            Cell1(Pidx).v == vCell(Pidx);
+            Cell1(Pidx).stateOfCharge == socCell(Pidx);
+            Cell1(Pidx).num_cycles == numCyclesCell(Pidx);
+            Cell1(Pidx).cell_temperature == temperatureCell(Pidx);
+        end
+    end
+end

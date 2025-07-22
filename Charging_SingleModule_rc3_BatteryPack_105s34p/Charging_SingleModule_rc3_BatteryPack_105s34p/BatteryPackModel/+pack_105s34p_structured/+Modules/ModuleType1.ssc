@@ -1,0 +1,107 @@
+component ModuleType1
+    % ModuleType1:2
+    % Module Block
+    %    Model resolution: Detailed
+    %    Number of parallel assemblies: 1
+    %    Number of cells per parallel assembly: 34
+    %
+    %    MATLAB version: 23.2
+    %    Simscape Battery version: 23.2
+    %    Simscape code generated on: 21-Jul-2025 23:15:52
+
+    parameters
+        SOC_vecCell = {[0, .1, .25, .5, .75, .9, 1],'1'}; % Vector of state-of-charge values, SOC
+        T_vecCell = {[278, 293, 313],'K'}; % Vector of temperatures, T
+        V0_matCell = {[3.49, 3.5, 3.51; 3.55, 3.57, 3.56; 3.62, 3.63, 3.64; 3.71, 3.71, 3.72; 3.91, 3.93, 3.94; 4.07, 4.08, 4.08; 4.19, 4.19, 4.19],'V'}; % Open-circuit voltage, V0(SOC,T)
+        V_rangeCell = {[0, inf],'V'}; % Terminal voltage operating range [Min Max]
+        R0_matCell = {[.0117, .0085, .009; .011, .0085, .009; .0114, .0087, .0092; .0107, .0082, .0088; .0107, .0083, .0091; .0113, .0085, .0089; .0116, .0085, .0089],'Ohm'}; % Terminal resistance, R0(SOC,T)
+        AHCell = {27,'A*hr'}; % Cell capacity, AH
+        extrapolation_optionCell = {simscape.enum.extrapolation.nearest,'1'}; % Extrapolation method for all tables
+        R1_matCell = {[.0109, .0029, .0013; .0069, .0024, .0012; .0047, .0026, .0013; .0034, .0016, .001; .0033, .0023, .0014; .0033, .0018, .0011; .0028, .0017, .0011],'Ohm'}; % First polarization resistance, R1(SOC,T)
+        tau1_matCell = {[20, 36, 39; 31, 45, 39; 109, 105, 61; 36, 29, 26; 59, 77, 67; 40, 33, 29; 25, 39, 33],'s'}; % First time constant, tau1(SOC,T)
+        R2_matCell = {[.0109, .0029, .0013; .0069, .0024, .0012; .0047, .0026, .0013; .0034, .0016, .001; .0033, .0023, .0014; .0033, .0018, .0011; .0028, .0017, .0011],'Ohm'}; % Second polarization resistance, R2(SOC,T)
+        tau2_matCell = {[20, 36, 39; 31, 45, 39; 109, 105, 61; 36, 29, 26; 59, 77, 67; 40, 33, 29; 25, 39, 33],'s'}; % Second time constant, tau2(SOC,T)
+        R3_matCell = {[.0109, .0029, .0013; .0069, .0024, .0012; .0047, .0026, .0013; .0034, .0016, .001; .0033, .0023, .0014; .0033, .0018, .0011; .0028, .0017, .0011],'Ohm'}; % Third polarization resistance, R3(SOC,T)
+        tau3_matCell = {[20, 36, 39; 31, 45, 39; 109, 105, 61; 36, 29, 26; 59, 77, 67; 40, 33, 29; 25, 39, 33],'s'}; % Third time constant, tau3(SOC,T)
+        thermal_massCell = {100,'J/K'}; % Thermal mass
+    end
+
+    parameters(ExternalAccess=none)
+        P = 34; % Batteries in Parallel
+        S = 1; % Batteries in Series
+        CellCount = P*S; % Number of cells in battery
+    end
+
+    nodes
+        p = foundation.electrical.electrical; % +
+        n = foundation.electrical.electrical; % -
+    end
+
+    variables
+        iCell = {repmat(0,34,1),'A'}; % Cell current (positive in)
+        vCell = {repmat(0,34,1),'V'}; % Cell terminal voltage
+        socCell = {value={repmat(1,34,1),'1'},priority=priority.high}; % Cell state of charge
+        numCyclesCell = {value={repmat(0,34,1),'1'},priority=priority.high}; % Cell discharge cycles
+        temperatureCell = {value={repmat(298.15,34,1),'K'},priority=priority.high}; % Cell temperature
+        vParallelAssembly = {value={0,'V'},priority=priority.none}; % Parallel Assembly Voltage
+        socParallelAssembly = {value={1,'1'},priority=priority.none}; % Parallel Assembly state of charge
+    end
+
+    equations
+        assert(length(iCell) == CellCount);
+        assert(length(vCell) == CellCount);
+        assert(length(socCell) == CellCount);
+        assert(length(numCyclesCell) == CellCount);
+        assert(length(temperatureCell) == CellCount);
+        assert(length(vParallelAssembly) == S);
+        assert(length(socParallelAssembly) == S);
+    end
+
+    connections
+        connect(p,ParallelAssembly1(1).p);
+        connect(n,ParallelAssembly1(end).n);
+    end
+
+    annotations
+        [p] : Side=top;
+        [n] : Side=bottom;
+        UILayout = [UIGroup("Main",SOC_vecCell,T_vecCell,V0_matCell,V_rangeCell,R0_matCell,AHCell,extrapolation_optionCell),...
+            UIGroup("Dynamics",R1_matCell,tau1_matCell,R2_matCell,tau2_matCell,R3_matCell,tau3_matCell),...
+            UIGroup("Thermal",thermal_massCell)];
+        Icon = 'module.svg';
+    end
+
+    for Sidx = 1:S
+        components(ExternalAccess=observe,CompileReuse=true)
+            ParallelAssembly1(Sidx) = pack_105s34p_structured.ParallelAssemblies.ParallelAssemblyType1(...
+                P = P,SOC_vecCell = SOC_vecCell,...
+                T_vecCell = T_vecCell,V0_matCell = V0_matCell,V_rangeCell = V_rangeCell,...
+                R0_matCell = R0_matCell,AHCell = AHCell,extrapolation_optionCell = extrapolation_optionCell,...
+                R1_matCell = R1_matCell,tau1_matCell = tau1_matCell,...
+                R2_matCell = R2_matCell,tau2_matCell = tau2_matCell,R3_matCell = R3_matCell,...
+                tau3_matCell = tau3_matCell,thermal_massCell = thermal_massCell,...
+                iCell.priority = priority.none,vCell.priority = priority.none,socCell.priority = priority.none,...
+                numCyclesCell.priority = priority.none,...
+                temperatureCell.priority = priority.none,vParallelAssembly.priority = priority.none,...
+                socParallelAssembly.priority = priority.none);
+        end
+    end
+
+    for Sidx = 1:S-1
+        connections
+            connect(ParallelAssembly1(Sidx).n,ParallelAssembly1(Sidx+1).p);
+        end
+    end
+
+    for Sidx = 1:S
+        equations
+            ParallelAssembly1(Sidx).iCell == reshape(iCell((Sidx*P-(P-1)):(Sidx*P)),P,1);
+            ParallelAssembly1(Sidx).vCell == reshape(vCell((Sidx*P-(P-1)):(Sidx*P)),P,1);
+            ParallelAssembly1(Sidx).socCell == reshape(socCell((Sidx*P-(P-1)):(Sidx*P)),P,1);
+            ParallelAssembly1(Sidx).numCyclesCell == reshape(numCyclesCell((Sidx*P-(P-1)):(Sidx*P)),P,1);
+            ParallelAssembly1(Sidx).temperatureCell == reshape(temperatureCell((Sidx*P-(P-1)):(Sidx*P)),P,1);
+            ParallelAssembly1(Sidx).vParallelAssembly == vParallelAssembly(Sidx);
+            ParallelAssembly1(Sidx).socParallelAssembly == socParallelAssembly(Sidx);
+        end
+    end
+end
