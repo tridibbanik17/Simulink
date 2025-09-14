@@ -1,14 +1,10 @@
-# Contactor Control Logic – Simulink Implementation
-
-This repository contains a Simulink-based implementation of **contactor control logic system**, **105s34p electric car lithium-ion battery pack** and **passive cell balancing** developed using **MATLAB**, **Simulink**, **Simscape**, and **Stateflow**. The project demonstrates how to model and simulate the behaviour of an electrical contactor system, battery pack and cell balancing, commonly used in industrial automation and motor control applications.
-
 # Simulink Battery Management System (BMS) Models
 
 This repository contains **Simulink models and scripts** developed for research on Battery Management System (BMS) algorithms for light-duty electric vehicles, specifically the Stellantis RAM ProMASTER van. The work focuses on **model-based software development, system integration, and simulation validation** using MATLAB/Simulink and related toolboxes.
 
 ## Overview
 
-As a Research Assistant under the supervision of a PhD candidate, I contributed to the design, simulation, and analysis of battery pack models and BMS subsystems. The repository includes models for cell monitoring, contactor control, passive cell balancing, SOC/SOP estimation, and other key BMS functionalities.
+As a Research Assistant under the supervision of a PhD candidate, I, Tridib Banik, contributed to the design, simulation, and analysis of battery pack models and BMS subsystems. The repository includes models for cell monitoring, contactor control, passive cell balancing, SOC/SOP estimation, and other key BMS functionalities.
 
 ## Key Features & Contributions
 
