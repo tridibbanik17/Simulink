@@ -1,6 +1,6 @@
 # Simulink Battery Management System (BMS) Models
 
-This repository contains **Simulink models and scripts** developed for research on Battery Management System (BMS) algorithms for light-duty electric vehicles, specifically the Stellantis RAM ProMASTER van. The work focuses on **model-based software development, system integration, and simulation validation** using MATLAB/Simulink and related toolboxes.
+This repository contains **Simulink models and MATLAB scripts** developed for research on Battery Management System (BMS) algorithms for light-duty electric vehicles, specifically the Stellantis RAM ProMASTER van. The work focuses on **model-based software development, system integration, and simulation validation** using MATLAB/Simulink and related toolboxes.
 
 ## Overview
 
