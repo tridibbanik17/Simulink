@@ -28,7 +28,7 @@ As a Research Assistant under the supervision of a PhD candidate, I, Tridib Bani
    - MATLAB, Simulink and Stateflow
    - Simscape & NXP Model-Based Design Toolbox
    - FreeMASTER for signal visualization
-   - MATLAB scripting for analysis, plotting, and circuit design
+   - MATLAB scripting for analysis, plotting, and automated Simulink model modification
 
 6. **Research & Documentation**
    - Co-authored sections of a research manuscript: *“Holistic Memory Analysis of Battery Management System Algorithms for Light-Duty EV Battery Pack”* (in preparation).
