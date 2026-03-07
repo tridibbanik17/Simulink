@@ -1,0 +1,214 @@
+%% ==========================================
+% Combined Control + Comparison Script
+% Includes Grace Period for State Signals
+%% ==========================================
+
+clc;
+clear;
+
+%% ---- USER SETTINGS ----
+
+logFile = 'Sample_Level2.mat';
+
+% Signals used as inputs to Simulink
+vars_of_interest = { ...
+    'DCChargeInitialized', ...
+    'MainHighVltCntctrCmd', ...
+    'ChargingSysSts', ...
+    'Charger_Plugin_Status', ...
+    'HVBatCell_Voltage_High_Thrsh', ...
+    'HVBatRdy', ...
+    'HVBatModTempMax', ...
+    'HVBatCellVltMax', ...
+    'HVBatSOCMax' ...
+};
+
+% Signals to compare
+signals_to_compare = { ...
+    'HVBatChargeStat', ...
+    'HVBat_DC_CntctrStat', ...
+    'HVBatMaxCellVltAlld', ...
+    'HVBatMaxPkVltAllwd' ...
+};
+
+% Grace period for model response (seconds)
+grace_period = 0.5;
+
+model_name = 'AC_PlugInCharging';
+
+%% ==========================================
+%% Load Vehicle Log
+%% ==========================================
+
+load(logFile);   % loads struct "Data"
+
+%% ==========================================
+%% Send Log Signals to Base Workspace
+%% ==========================================
+
+for i = 1:length(vars_of_interest)
+
+    field = vars_of_interest{i};
+
+    t = Data.(field).time(:);
+    v = Data.(field).val(:);
+
+    data_array = [t v];
+
+    assignin('base', field, data_array);
+
+end
+
+%% ==========================================
+%% Run Simulink Model
+%% ==========================================
+
+open_system(model_name)
+
+simOut = sim(model_name);
+
+t_model_full = simOut.tout(:);
+
+%% ==========================================
+%% Signal Comparison Loop
+%% ==========================================
+
+for s = 1:length(signals_to_compare)
+
+    signalName = signals_to_compare{s};
+
+    fprintf('\n====================================\n');
+    fprintf('Comparing: %s\n', signalName);
+    fprintf('====================================\n');
+
+    %% ---- Model Output ----
+
+    y_model_full = simOut.get(signalName);
+    y_model_full = y_model_full(:);
+
+    %% ---- Vehicle Log ----
+
+    t_log_full = Data.(signalName).time(:);
+    y_log_full = Data.(signalName).val(:);
+
+    %% ---- Align lengths ----
+
+    modelLen = min(length(t_model_full), length(y_model_full));
+    logLen   = min(length(t_log_full), length(y_log_full));
+
+    t_model = t_model_full(1:modelLen);
+    y_model = y_model_full(1:modelLen);
+
+    t_log = t_log_full(1:logLen);
+    y_log = y_log_full(1:logLen);
+
+    %% ---- Limit model to log duration ----
+
+    validIdx = t_model <= t_log(end);
+
+    t_model = t_model(validIdx);
+    y_model = y_model(validIdx);
+
+    %% ==========================================
+    %% Nearest Sample Alignment (NO interpolation)
+    %% ==========================================
+
+    y_log_aligned = zeros(size(t_model));
+
+    for k = 1:length(t_model)
+
+        [~, idx] = min(abs(t_log - t_model(k)));
+        y_log_aligned(k) = y_log(idx);
+
+    end
+
+    %% ==========================================
+    %% Detect Log State Transitions
+    %% ==========================================
+
+    log_change_idx = find(diff(y_log_aligned) ~= 0) + 1;
+
+    mismatch_regions = [];
+
+    for iT = 1:length(log_change_idx)
+
+        idx = log_change_idx(iT);
+
+        t_change = t_model(idx);
+        new_state = y_log_aligned(idx);
+
+        t_end = t_change + grace_period;
+
+        window_idx = find(t_model >= t_change & t_model <= t_end);
+
+        if isempty(window_idx)
+            continue
+        end
+
+        model_segment = y_model(window_idx);
+
+        % Did model reach new state?
+        if ~any(model_segment == new_state)
+
+            mismatch_regions = [mismatch_regions; t_change t_end];
+
+        end
+
+    end
+
+    %% ==========================================
+    %% Metrics
+    %% ==========================================
+
+    isDifferent = y_model ~= y_log_aligned;
+
+    matchPercent = 100 * sum(~isDifferent) / length(isDifferent);
+
+    fprintf('Match: %.2f %%\n', matchPercent);
+    fprintf('Grace-period violations: %d\n', size(mismatch_regions,1));
+
+    for iM = 1:size(mismatch_regions,1)
+
+        fprintf('Late response from %.3f s to %.3f s\n', ...
+            mismatch_regions(iM,1), ...
+            mismatch_regions(iM,2));
+
+    end
+
+    %% ==========================================
+    %% Plot
+    %% ==========================================
+
+    figure('Color','white')
+
+    plot(t_model, y_model,'b','LineWidth',1.4)
+    hold on
+
+    plot(t_model, y_log_aligned,'r--','LineWidth',1.4)
+
+    y_min = min([y_model; y_log_aligned]);
+    y_max = max([y_model; y_log_aligned]);
+
+    for iM = 1:size(mismatch_regions,1)
+
+        x1 = mismatch_regions(iM,1);
+        x2 = mismatch_regions(iM,2);
+
+        patch([x1 x2 x2 x1], ...
+              [y_min y_min y_max y_max], ...
+              [1 0.8 0.8], ...
+              'EdgeColor','none', ...
+              'FaceAlpha',0.35);
+
+    end
+
+    legend('Model','Vehicle Log','Grace Violation','Location','best')
+
+    xlabel('Time (s)')
+    ylabel(signalName)
+
+    title(['Model vs Vehicle Log : ', signalName])
+
+    grid on
+
+end
